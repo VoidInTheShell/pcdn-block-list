@@ -6,6 +6,9 @@
 ## Clash使用示例：
 
 ```
+rules:
+  - RULE-SET,PCDN,REJECT,no-resolve
+rule-providers:
   PCDN:
     type: http
     behavior: domain
