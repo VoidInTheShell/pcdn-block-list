@@ -20,9 +20,8 @@ rule-providers:
 规则整合自：
 - https://github.com/uselibrary/PCDN/blob/main/pcdn.list
 - https://github.com/privacy-protection-tools/anti-AD/blob/5f9d5aba3af68bd18cd0c207a1a879b7cc71db58/discretion/pcdn.txt
-- https://www.nodeseek.com/post-139229-1
-- https://www.v2ex.com/t/1127079
 - https://github.com/thhbdd/Block-pcdn-domains/blob/main/ban.txt
-- https://forum.naixi.net/thread-1948-1-1.html
 - https://github.com/susetao/PCDNFilter-CHN-
+- https://github.com/Womsxd/MyAdBlockRules/refs/heads/master/p2pcdnblock.txt
+- https://www.v2ex.com/t/1127079
 
