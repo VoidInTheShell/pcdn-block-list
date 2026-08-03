@@ -70,27 +70,3 @@ python scripts/sync_rules.py --check
 | [Womsxd/MyAdBlockRules](https://github.com/Womsxd/MyAdBlockRules) | AdGuard | `p2pcdnblock.txt`，补充腾讯、快手、斗鱼、星域云、哔哩哔哩、金山云等规则 |
 
 原 README 中的 V2EX 页面是讨论/线索，不是稳定的机器可读上游，因此不再由 CI 抓取；需要人工核验的新线索应先转换成可审计的专门清单，再加入 `sources.json`。
-
-## 关于用户点名的两个热门项目
-
-- [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script) 当前有广告、隐私和 BlockHttpDNS 等通用规则，但没有独立的 PCDN 规则入口。其大体量混合列表会带来大量与 PCDN 无关的域名和误封风险，所以没有直接纳入。
-- [Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules) 当前 `release` 分支提供 `direct`、`proxy`、`reject`、`private` 等通用分流集合，没有专门的 PCDN 文件。整个 `reject.txt` 或 `proxy.txt` 不能作为 PCDN 清单，因此没有纳入。
-
-这两个项目仍可作为后续调查入口；如果它们以后发布明确标注为 PCDN 的独立文件，再把该文件以固定路径加入 `sources.json`。
-
-## 语法处理和转换
-
-同步脚本 [`scripts/sync_rules.py`](scripts/sync_rules.py) 先把各来源归一化为四类：
-
-- 普通域名或 `DOMAIN-SUFFIX` → ADH 的 `||domain^`、Clash 的 `DOMAIN-SUFFIX,domain`；
-- `DOMAIN` → Clash 的精确域名规则；若输出到 ADH，则使用其等价的 `||domain^`；
-- AdGuard 的主机通配符（例如 `||stun*.example.com^`）→ ADH 保留通配符，Clash 转为锚定的 `DOMAIN-REGEX`；
-- AdGuard `/regex/` 和 Clash `DOMAIN-REGEX` → 分别输出为 ADH 正则和 Clash `DOMAIN-REGEX`。
-
-解析器只接受域名相关语法。未知的非注释行会使同步失败，防止上游格式变化后静默丢规则。当前 `PCDNFilter.txt` 中有几行以 `/` 开始但缺少结尾 `/` 的旧正则，脚本会去掉误作结尾的未转义 `^`，然后在两种产物中生成合法形式；处理结果和来源 SHA-256 都可从产物头部及 `sources.lock.json` 审计。
-
-当前生成产物：
-
-- [`pcdn_block_adh.txt`](pcdn_block_adh.txt) — AdGuard Home 过滤器格式；
-- [`pcdn_block_clash.yaml`](pcdn_block_clash.yaml) — Clash/Mihomo `behavior: domain` YAML 格式；
-- [`sources.lock.json`](sources.lock.json) — 上游内容哈希和生成统计。
