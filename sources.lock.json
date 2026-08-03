@@ -1,0 +1,57 @@
+{
+  "generator": "scripts/sync_rules.py",
+  "sources": [
+    {
+      "id": "uselibrary-pcdn",
+      "name": "uselibrary/PCDN",
+      "url": "https://raw.githubusercontent.com/uselibrary/PCDN/main/pcdn.list",
+      "format": "clash",
+      "sha256": "40070869224f1851b8ccdb8fd2384ba49e62ee022a76aacf4fb8d02a775a6d3e",
+      "recognized_lines": 36,
+      "unique_rules": 36
+    },
+    {
+      "id": "anti-ad-pcdn",
+      "name": "privacy-protection-tools/anti-AD",
+      "url": "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/discretion/pcdn.txt",
+      "format": "domain-list",
+      "sha256": "2cdde294a65230b930032816e7ce3343651f97024693f556b812110fb068b4ff",
+      "recognized_lines": 30,
+      "unique_rules": 30
+    },
+    {
+      "id": "block-pcdn-domains",
+      "name": "thhbdd/Block-pcdn-domains",
+      "url": "https://raw.githubusercontent.com/thhbdd/Block-pcdn-domains/main/ban.txt",
+      "format": "adguard",
+      "sha256": "a0913f98618118e17ba4a12efbfb3078878012730c4eb7a69dcf920cc01daf5d",
+      "recognized_lines": 24,
+      "unique_rules": 24
+    },
+    {
+      "id": "pcdnfilter-chn",
+      "name": "susetao/PCDNFilter-CHN-",
+      "url": "https://raw.githubusercontent.com/susetao/PCDNFilter-CHN-/main/PCDNFilter.txt",
+      "format": "adguard",
+      "sha256": "6a87203c5bf77af532eb83b07e3ca7241d7d79f92088fc66263a8c25268b7469",
+      "recognized_lines": 37,
+      "unique_rules": 37
+    },
+    {
+      "id": "my-ad-block-rules-p2pcdn",
+      "name": "Womsxd/MyAdBlockRules",
+      "url": "https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt",
+      "format": "adguard",
+      "sha256": "6bd25e22e11f6ad57a6629ff6a5d7ad5f45896ead984bbb8ff8d1ba5612d37a9",
+      "recognized_lines": 43,
+      "unique_rules": 43
+    }
+  ],
+  "rules": {
+    "suffix": 50,
+    "exact": 0,
+    "wildcard": 16,
+    "regex": 15
+  },
+  "total_rules": 81
+}

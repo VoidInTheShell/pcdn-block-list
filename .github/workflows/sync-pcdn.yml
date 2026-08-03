@@ -1,0 +1,98 @@
+name: Sync PCDN rules
+
+on:
+  schedule:
+    # Check the public upstreams every six hours. The fetcher records each
+    # upstream SHA-256 in sources.lock.json, so source-only changes are also
+    # visible in the generated commit.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/sync-pcdn.yml"
+      - "sources.json"
+      - "scripts/**"
+      - "tests/**"
+      - "pcdn_block_adh.txt"
+      - "pcdn_block_clash.yaml"
+      - "sources.lock.json"
+  pull_request:
+    paths:
+      - ".github/workflows/sync-pcdn.yml"
+      - "sources.json"
+      - "scripts/**"
+      - "tests/**"
+      - "pcdn_block_adh.txt"
+      - "pcdn_block_clash.yaml"
+      - "sources.lock.json"
+
+concurrency:
+  group: pcdn-rule-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Generate rules from all required upstreams
+        run: python scripts/sync_rules.py
+
+      - name: Run parser tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate generated files and whitespace
+        run: |
+          python scripts/sync_rules.py --check
+          git diff --check
+
+      - name: Commit and publish changed outputs
+        run: |
+          if git diff --quiet -- pcdn_block_adh.txt pcdn_block_clash.yaml sources.lock.json; then
+            echo "No rule or source-lock changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pcdn_block_adh.txt pcdn_block_clash.yaml sources.lock.json
+          git commit -m "chore: sync PCDN rules"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run parser tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Verify committed rules match current upstreams
+        run: python scripts/sync_rules.py --check
+
+      - name: Check whitespace
+        run: git diff --check

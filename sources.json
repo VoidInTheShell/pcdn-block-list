@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "uselibrary-pcdn",
+      "name": "uselibrary/PCDN",
+      "url": "https://raw.githubusercontent.com/uselibrary/PCDN/main/pcdn.list",
+      "format": "clash"
+    },
+    {
+      "id": "anti-ad-pcdn",
+      "name": "privacy-protection-tools/anti-AD",
+      "url": "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/discretion/pcdn.txt",
+      "format": "domain-list"
+    },
+    {
+      "id": "block-pcdn-domains",
+      "name": "thhbdd/Block-pcdn-domains",
+      "url": "https://raw.githubusercontent.com/thhbdd/Block-pcdn-domains/main/ban.txt",
+      "format": "adguard"
+    },
+    {
+      "id": "pcdnfilter-chn",
+      "name": "susetao/PCDNFilter-CHN-",
+      "url": "https://raw.githubusercontent.com/susetao/PCDNFilter-CHN-/main/PCDNFilter.txt",
+      "format": "adguard"
+    },
+    {
+      "id": "my-ad-block-rules-p2pcdn",
+      "name": "Womsxd/MyAdBlockRules",
+      "url": "https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt",
+      "format": "adguard"
+    }
+  ]
+}
