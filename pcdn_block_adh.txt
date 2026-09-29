@@ -6,21 +6,26 @@
 ! - privacy-protection-tools/anti-AD | https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/discretion/pcdn.txt | sha256=2cdde294a65230b930032816e7ce3343651f97024693f556b812110fb068b4ff
 ! - thhbdd/Block-pcdn-domains | https://raw.githubusercontent.com/thhbdd/Block-pcdn-domains/main/ban.txt | sha256=a0913f98618118e17ba4a12efbfb3078878012730c4eb7a69dcf920cc01daf5d
 ! - susetao/PCDNFilter-CHN- | https://raw.githubusercontent.com/susetao/PCDNFilter-CHN-/main/PCDNFilter.txt | sha256=6a87203c5bf77af532eb83b07e3ca7241d7d79f92088fc66263a8c25268b7469
-! - Womsxd/MyAdBlockRules | https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt | sha256=6bd25e22e11f6ad57a6629ff6a5d7ad5f45896ead984bbb8ff8d1ba5612d37a9
+! - Womsxd/MyAdBlockRules | https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt | sha256=a7f74e9a29deb4811ca196ccb5e803e1b4e0cee34955aa8e88e5fa3669e56508
 
 ! Domain and exact-domain rules
 ||bjfesdk.douyucdn.cn^
 ||bsccdn.net^
+||comfylink.com^
 ||conf-darwin.xycdn.com^
+||dcdn.baidu.com^
 ||dotcounter.douyucdn.cn^
 ||dyp2p-ali.douyucdn.cn^
 ||dyp2p-hw.douyucdn.cn^
 ||gjfzpt.cn^
+||hnzkclouds.com^
 ||ietheivaicai.com^
 ||jomodns.cn^
 ||kuiniuca.com^
+||log.qiniuapi.com^
 ||mcdn.bilivideo.cn^
 ||musicstun.p2p.qq.com^
+||ndcpp.com^
 ||nexusedgeio.com^
 ||onethingpcs.com^
 ||p2p-ali.douyucdn.cn^
@@ -39,30 +44,38 @@
 ||p2pupdate.gamedl.qq.com^
 ||p2pupgrade.gamedl.qq.com^
 ||p2pvod-ws.douyucdn.cn^
+||pcdn-query.baidu.com^
 ||pcdn.xmcdn.com^
 ||pcdn.yximgs.com^
+||pcth-cdn.ksyun.com^
 ||pkoplink.com^
+||puncher.xiaodu.com^
 ||saxysec.com^
 ||sd-gl.xycdn.com^
+||sd-glsky.xycdn.com^
 ||sdkapi.douyucdn.cn^
 ||seeds-open.xycdn.com^
 ||signal.qvb.qcloud.com^
 ||slb-p2p.vcloud.ks-live.com^
+||starrydyn.com^
 ||stun-a1.qq.com^
 ||stun.douyucdn.cn^
 ||stun.hitv.com^
 ||stun.qqlive.qq.com^
 ||stun1.douyucdn.cn^
 ||szbdyd.com^
+||td.ksyun.com^
 ||tpa-hcdn.iqiyi.com^
 ||ttxyajs.data.kuiniuca.com^
 ||uhabo.com^
+||xdrtc.com^
 ||xycdn.com^
 ||yximgs-webrtc.liveplay.myqcloud.com^
 
 ! Host wildcard rules
 ||*-p2p-*.chat.bilibili.com^
 ||*-pcdn-*.biliapi.net^
+||*.gslb.ubeethiesemo.com^
 ||*.p2p.huya.com^
 ||*.p2ptun.qq.com^
 ||*.pcdn.yximgs.com^

@@ -7,21 +7,26 @@
 # - privacy-protection-tools/anti-AD | https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/discretion/pcdn.txt | sha256=2cdde294a65230b930032816e7ce3343651f97024693f556b812110fb068b4ff
 # - thhbdd/Block-pcdn-domains | https://raw.githubusercontent.com/thhbdd/Block-pcdn-domains/main/ban.txt | sha256=a0913f98618118e17ba4a12efbfb3078878012730c4eb7a69dcf920cc01daf5d
 # - susetao/PCDNFilter-CHN- | https://raw.githubusercontent.com/susetao/PCDNFilter-CHN-/main/PCDNFilter.txt | sha256=6a87203c5bf77af532eb83b07e3ca7241d7d79f92088fc66263a8c25268b7469
-# - Womsxd/MyAdBlockRules | https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt | sha256=6bd25e22e11f6ad57a6629ff6a5d7ad5f45896ead984bbb8ff8d1ba5612d37a9
+# - Womsxd/MyAdBlockRules | https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt | sha256=a7f74e9a29deb4811ca196ccb5e803e1b4e0cee34955aa8e88e5fa3669e56508
 
 payload:
   - DOMAIN-SUFFIX,bjfesdk.douyucdn.cn
   - DOMAIN-SUFFIX,bsccdn.net
+  - DOMAIN-SUFFIX,comfylink.com
   - DOMAIN-SUFFIX,conf-darwin.xycdn.com
+  - DOMAIN-SUFFIX,dcdn.baidu.com
   - DOMAIN-SUFFIX,dotcounter.douyucdn.cn
   - DOMAIN-SUFFIX,dyp2p-ali.douyucdn.cn
   - DOMAIN-SUFFIX,dyp2p-hw.douyucdn.cn
   - DOMAIN-SUFFIX,gjfzpt.cn
+  - DOMAIN-SUFFIX,hnzkclouds.com
   - DOMAIN-SUFFIX,ietheivaicai.com
   - DOMAIN-SUFFIX,jomodns.cn
   - DOMAIN-SUFFIX,kuiniuca.com
+  - DOMAIN-SUFFIX,log.qiniuapi.com
   - DOMAIN-SUFFIX,mcdn.bilivideo.cn
   - DOMAIN-SUFFIX,musicstun.p2p.qq.com
+  - DOMAIN-SUFFIX,ndcpp.com
   - DOMAIN-SUFFIX,nexusedgeio.com
   - DOMAIN-SUFFIX,onethingpcs.com
   - DOMAIN-SUFFIX,p2p-ali.douyucdn.cn
@@ -40,28 +45,36 @@ payload:
   - DOMAIN-SUFFIX,p2pupdate.gamedl.qq.com
   - DOMAIN-SUFFIX,p2pupgrade.gamedl.qq.com
   - DOMAIN-SUFFIX,p2pvod-ws.douyucdn.cn
+  - DOMAIN-SUFFIX,pcdn-query.baidu.com
   - DOMAIN-SUFFIX,pcdn.xmcdn.com
   - DOMAIN-SUFFIX,pcdn.yximgs.com
+  - DOMAIN-SUFFIX,pcth-cdn.ksyun.com
   - DOMAIN-SUFFIX,pkoplink.com
+  - DOMAIN-SUFFIX,puncher.xiaodu.com
   - DOMAIN-SUFFIX,saxysec.com
   - DOMAIN-SUFFIX,sd-gl.xycdn.com
+  - DOMAIN-SUFFIX,sd-glsky.xycdn.com
   - DOMAIN-SUFFIX,sdkapi.douyucdn.cn
   - DOMAIN-SUFFIX,seeds-open.xycdn.com
   - DOMAIN-SUFFIX,signal.qvb.qcloud.com
   - DOMAIN-SUFFIX,slb-p2p.vcloud.ks-live.com
+  - DOMAIN-SUFFIX,starrydyn.com
   - DOMAIN-SUFFIX,stun-a1.qq.com
   - DOMAIN-SUFFIX,stun.douyucdn.cn
   - DOMAIN-SUFFIX,stun.hitv.com
   - DOMAIN-SUFFIX,stun.qqlive.qq.com
   - DOMAIN-SUFFIX,stun1.douyucdn.cn
   - DOMAIN-SUFFIX,szbdyd.com
+  - DOMAIN-SUFFIX,td.ksyun.com
   - DOMAIN-SUFFIX,tpa-hcdn.iqiyi.com
   - DOMAIN-SUFFIX,ttxyajs.data.kuiniuca.com
   - DOMAIN-SUFFIX,uhabo.com
+  - DOMAIN-SUFFIX,xdrtc.com
   - DOMAIN-SUFFIX,xycdn.com
   - DOMAIN-SUFFIX,yximgs-webrtc.liveplay.myqcloud.com
   - DOMAIN-REGEX,^.*\-p2p\-.*\.chat\.bilibili\.com$
   - DOMAIN-REGEX,^.*\-pcdn\-.*\.biliapi\.net$
+  - DOMAIN-REGEX,^.*\.gslb\.ubeethiesemo\.com$
   - DOMAIN-REGEX,^.*\.p2p\.huya\.com$
   - DOMAIN-REGEX,^.*\.p2ptun\.qq\.com$
   - DOMAIN-REGEX,^.*\.pcdn\.yximgs\.com$
