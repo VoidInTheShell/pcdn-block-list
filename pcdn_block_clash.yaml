@@ -7,7 +7,7 @@
 # - privacy-protection-tools/anti-AD | https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/discretion/pcdn.txt | sha256=2cdde294a65230b930032816e7ce3343651f97024693f556b812110fb068b4ff
 # - thhbdd/Block-pcdn-domains | https://raw.githubusercontent.com/thhbdd/Block-pcdn-domains/main/ban.txt | sha256=a0913f98618118e17ba4a12efbfb3078878012730c4eb7a69dcf920cc01daf5d
 # - susetao/PCDNFilter-CHN- | https://raw.githubusercontent.com/susetao/PCDNFilter-CHN-/main/PCDNFilter.txt | sha256=6a87203c5bf77af532eb83b07e3ca7241d7d79f92088fc66263a8c25268b7469
-# - Womsxd/MyAdBlockRules | https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt | sha256=a7f74e9a29deb4811ca196ccb5e803e1b4e0cee34955aa8e88e5fa3669e56508
+# - Womsxd/MyAdBlockRules | https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt | sha256=418826391bb43164cc46162110a3e7fc34b2030f1d22a6b98870458f52db82ae
 
 payload:
   - DOMAIN-SUFFIX,bjfesdk.douyucdn.cn
@@ -80,6 +80,7 @@ payload:
   - DOMAIN-REGEX,^.*\.pcdn\.yximgs\.com$
   - DOMAIN-REGEX,^.*\.stun\.yfp2p\.net$
   - DOMAIN-REGEX,^.*pcdn.*\.xxpkg\.com$
+  - DOMAIN-REGEX,^apd\-.*\.teg\.tencent\-cloud\.net$
   - DOMAIN-REGEX,^config\-p2p\-.*\.vcloud\.ks\-live\.com$
   - DOMAIN-REGEX,^dyp2p\-.*\.douyucdn2\.cn$
   - DOMAIN-REGEX,^p2p\-punch\-.*\.xxpkg\.com$

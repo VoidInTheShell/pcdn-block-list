@@ -42,16 +42,16 @@
       "name": "Womsxd/MyAdBlockRules",
       "url": "https://raw.githubusercontent.com/Womsxd/MyAdBlockRules/master/p2pcdnblock.txt",
       "format": "adguard",
-      "sha256": "a7f74e9a29deb4811ca196ccb5e803e1b4e0cee34955aa8e88e5fa3669e56508",
-      "recognized_lines": 58,
-      "unique_rules": 57
+      "sha256": "418826391bb43164cc46162110a3e7fc34b2030f1d22a6b98870458f52db82ae",
+      "recognized_lines": 61,
+      "unique_rules": 60
     }
   ],
   "rules": {
     "suffix": 62,
     "exact": 0,
-    "wildcard": 17,
+    "wildcard": 18,
     "regex": 15
   },
-  "total_rules": 94
+  "total_rules": 95
 }
