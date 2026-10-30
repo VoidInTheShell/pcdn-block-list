@@ -12,21 +12,25 @@ on:
       - master
     paths:
       - ".github/workflows/sync-pcdn.yml"
+      - ".gitattributes"
       - "sources.json"
       - "scripts/**"
       - "tests/**"
       - "pcdn_block_adh.txt"
       - "pcdn_block_clash.yaml"
       - "sources.lock.json"
+      - "inputs/**"
   pull_request:
     paths:
       - ".github/workflows/sync-pcdn.yml"
+      - ".gitattributes"
       - "sources.json"
       - "scripts/**"
       - "tests/**"
       - "pcdn_block_adh.txt"
       - "pcdn_block_clash.yaml"
       - "sources.lock.json"
+      - "inputs/**"
 
 concurrency:
   group: pcdn-rule-sync
@@ -57,18 +61,21 @@ jobs:
 
       - name: Validate generated files and whitespace
         run: |
-          python scripts/sync_rules.py --check
+          python scripts/sync_rules.py --locked --check
+          python scripts/validate_mihomo.py --install
           git diff --check
 
       - name: Commit and publish changed outputs
         run: |
-          if git diff --quiet -- pcdn_block_adh.txt pcdn_block_clash.yaml sources.lock.json; then
-            echo "No rule or source-lock changes."
+          git add pcdn_block_adh.txt pcdn_block_clash.yaml sources.lock.json inputs
+          if git diff --cached --quiet; then
+            echo "No rule, lock, or input-snapshot changes."
             exit 0
           fi
+          remote_head=$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | cut -f1)
+          test "$remote_head" = "$(git rev-parse HEAD)" || { echo "Branch advanced; rerun synchronization."; exit 1; }
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pcdn_block_adh.txt pcdn_block_clash.yaml sources.lock.json
           git commit -m "chore: sync PCDN rules"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
@@ -91,8 +98,11 @@ jobs:
       - name: Run parser tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify committed rules match current upstreams
-        run: python scripts/sync_rules.py --check
+      - name: Replay committed inputs without refetching changing upstreams
+        run: python scripts/sync_rules.py --locked --check
+
+      - name: Validate native loading and matching
+        run: python scripts/validate_mihomo.py --install
 
       - name: Check whitespace
         run: git diff --check

@@ -1,0 +1,2 @@
+# Source snapshots are SHA-256 verified byte-for-byte, including BOM/CRLF.
+inputs/** -text -whitespace

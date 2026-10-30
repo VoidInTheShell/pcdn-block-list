@@ -15,6 +15,7 @@ import hashlib
 import json
 import re
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -113,20 +114,19 @@ def normalize_domain(value: str) -> str:
     if len(labels) < 2 or any(not label for label in labels):
         raise RuleParseError(f"invalid domain {value!r}")
     for index, label in enumerate(labels):
-        if not DOMAIN_LABEL_RE.fullmatch(label):
-            raise RuleParseError(f"invalid domain {value!r}")
-        if label.startswith("-") or label.endswith("-"):
-            raise RuleParseError(f"invalid domain {value!r}")
         if "*" not in label:
             try:
-                # Preserve ordinary ASCII spelling but accept IDN input in a
-                # deterministic punycode form if an upstream ever adds one.
-                encoded = label.encode("idna").decode("ascii")
+                label = label.encode("idna").decode("ascii").lower()
             except UnicodeError as exc:
                 raise RuleParseError(f"invalid domain {value!r}") from exc
-            if encoded != label:
-                labels[index] = encoded.lower()
-    return ".".join(labels)
+        if (not DOMAIN_LABEL_RE.fullmatch(label) or len(label) > 63
+                or label.startswith("-") or label.endswith("-")):
+            raise RuleParseError(f"invalid domain {value!r}")
+        labels[index] = label
+    result = ".".join(labels)
+    if len(result) > 253:
+        raise RuleParseError(f"domain is too long: {value!r}")
+    return result
 
 
 def normalize_regex(value: str) -> str:
@@ -136,15 +136,28 @@ def normalize_regex(value: str) -> str:
     if value.startswith("/"):
         if len(value) > 1 and value.endswith("/"):
             value = value[1:-1]
+        elif value.endswith("^") and not value.endswith(r"\^"):
+            # Recognize the legacy /pattern^ delimiter form without domain-specific exceptions.
+            value = value[1:-1]
         else:
-            # A current upstream has four lines written as /pattern^ instead
-            # of /pattern/.  Treat the final unescaped ^ as the accidental
-            # AdGuard terminator and retain the meaningful leading anchor.
-            value = value[1:]
-            if value.endswith("^") and not value.endswith(r"\^"):
-                value = value[:-1]
-    if not value:
-        raise RuleParseError("empty regular expression")
+            raise RuleParseError("invalid AdGuard regular expression delimiters")
+    if not value or "\n" in value or "\r" in value:
+        raise RuleParseError("empty or multiline regular expression")
+    if (
+        re.search(r"\(\?(?:[=!#]|<[=!]|>|\(|[aLuxt])|\\[1-9ZNuU]|\(\?P=", value)
+        or re.search(r"(?<!\\)(?:[*+?]|\{\d+(?:,\d*)?\})\+", value)
+        or any(
+            any(flag in flags for flag in "aLux")
+            for flags in re.findall(r"\(\?([aiLmsux-]+)(?:\)|:)", value)
+        )
+        or any(
+            int(number) > 1000
+            for repeat in re.findall(r"(?<!\\)\{(\d+)(?:,(\d*))?\}", value)
+            for number in repeat
+            if number
+        )
+    ):
+        raise RuleParseError("regular expression uses unsupported RE2 features")
     try:
         re.compile(value)
     except re.error as exc:
@@ -161,13 +174,19 @@ def _add_domain_rule(rules: RuleSet, kind: str, value: str) -> None:
 
 
 def _add_adguard_rule(rules: RuleSet, line: str) -> None:
-    body = line[2:]
-    # AdGuard options follow ^$, and the terminal ^ itself is not part of the
-    # hostname.  Splitting at the first ^ also handles rules without options.
-    body = body.split("^", 1)[0].strip()
-    if not body:
-        raise RuleParseError("empty AdGuard domain rule")
-    _add_domain_rule(rules, "suffix", body)
+    # This repository publishes unconditional block lists. Conditions and
+    # cancellation/allow rules cannot be silently promoted to global blocks.
+    if "$" in line or line.startswith("@@"):
+        raise RuleParseError("AdGuard modifiers and exceptions need explicit review")
+    suffix = line.startswith("||")
+    body = line[2:] if suffix else line[1:]
+    if body.endswith("^"):
+        body = body[:-1]
+    domain = normalize_domain(body)
+    if "*" in domain and not suffix:
+        rules.add("regex", wildcard_to_regex(domain))
+    else:
+        _add_domain_rule(rules, "suffix" if suffix else "exact", domain)
 
 
 def _add_clash_rule(rules: RuleSet, prefix: str, value: str) -> None:
@@ -176,18 +195,19 @@ def _add_clash_rule(rules: RuleSet, prefix: str, value: str) -> None:
     if prefix == "DOMAIN-REGEX":
         rules.add("regex", normalize_regex(value))
         return
-    if prefix == "DOMAIN-SUFFIX":
-        _add_domain_rule(rules, "suffix", value)
-        return
-    if prefix == "DOMAIN":
-        _add_domain_rule(rules, "exact", value)
+    if prefix in {"DOMAIN-SUFFIX", "DOMAIN"}:
+        if "*" in value:
+            raise RuleParseError("Clash DOMAIN/DOMAIN-SUFFIX cannot contain wildcards; use DOMAIN-REGEX")
+        _add_domain_rule(rules, "suffix" if prefix == "DOMAIN-SUFFIX" else "exact", value)
         return
     raise RuleParseError(f"unsupported rule type {prefix!r}")
 
 
-def parse_source(text: str, source_name: str = "source") -> ParsedSource:
-    """Parse supported AdGuard, Clash, YAML payload, and plain-domain lines."""
+def parse_source(text: str, source_name: str = "source", source_format: str = "auto") -> ParsedSource:
+    """Parse a declared source format; reject cross-format drift and lost semantics."""
 
+    if source_format not in {"auto", "clash", "adguard", "domain-list"}:
+        raise RuleParseError(f"unsupported source format: {source_format!r}")
     rules = RuleSet()
     unsupported: List[Tuple[int, str]] = []
     recognized = 0
@@ -210,14 +230,20 @@ def parse_source(text: str, source_name: str = "source") -> ParsedSource:
         try:
             clash_match = RULE_PREFIX_RE.match(line)
             if clash_match:
+                if source_format not in {"auto", "clash"}:
+                    raise RuleParseError("Clash rule in a non-Clash source")
                 _add_clash_rule(rules, clash_match.group(1), clash_match.group(2))
                 recognized += 1
                 continue
-            if line.startswith("||"):
+            if line.startswith(("|", "@@")):
+                if source_format not in {"auto", "adguard"}:
+                    raise RuleParseError("AdGuard rule in a non-AdGuard source")
                 _add_adguard_rule(rules, line)
                 recognized += 1
                 continue
             if line.startswith("/"):
+                if source_format not in {"auto", "adguard"}:
+                    raise RuleParseError("AdGuard regex in a non-AdGuard source")
                 rules.add("regex", normalize_regex(line))
                 recognized += 1
                 continue
@@ -225,6 +251,10 @@ def parse_source(text: str, source_name: str = "source") -> ParsedSource:
             # Minimal hosts-file support is useful for small community lists,
             # while refusing arbitrary multi-column input prevents accidental
             # ingestion of unrelated metadata.
+            if source_format not in {"auto", "domain-list"}:
+                raise RuleParseError("plain domain in a differently declared source")
+            if "*" in line:
+                raise RuleParseError("plain-domain wildcards need an explicit AdGuard rule")
             tokens = line.split()
             if len(tokens) == 2 and tokens[0] in {"0.0.0.0", "127.0.0.1", "::1"}:
                 _add_domain_rule(rules, "suffix", tokens[1])
@@ -256,8 +286,10 @@ def fetch_source(url: str, retries: int = 3) -> str:
     for attempt in range(retries):
         try:
             with urlopen(request, timeout=30) as response:
-                data = response.read()
-            return data.decode("utf-8-sig")
+                data = response.read(8 * 1024 * 1024 + 1)
+            if len(data) > 8 * 1024 * 1024:
+                raise FetchError(f"source exceeds 8 MiB: {url}")
+            return data.decode("utf-8")
         except (HTTPError, URLError, TimeoutError, UnicodeDecodeError) as exc:
             last_error = exc
             if attempt + 1 < retries:
@@ -280,8 +312,10 @@ def load_config(path: Path) -> List[Mapping[str, str]]:
             raise RuleParseError("each source must be an object")
         source_id = str(source.get("id", "")).strip()
         url = str(source.get("url", "")).strip()
-        if not source_id or source_id in seen:
-            raise RuleParseError(f"source id is missing or duplicated: {source_id!r}")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", source_id) or source_id in seen:
+            raise RuleParseError(f"source id is invalid or duplicated: {source_id!r}")
+        if source.get("format") not in {"clash", "adguard", "domain-list"}:
+            raise RuleParseError(f"source {source_id!r} must declare a supported format")
         if not url.startswith("https://"):
             raise RuleParseError(f"source {source_id!r} must use an HTTPS URL")
         seen.add(source_id)
@@ -289,9 +323,11 @@ def load_config(path: Path) -> List[Mapping[str, str]]:
     return validated
 
 
-def wildcard_to_regex(pattern: str) -> str:
+def wildcard_to_regex(pattern: str, *, include_subdomains: bool = False) -> str:
+    """Translate host globs, preserving AdGuard || suffix-anchor semantics."""
     escaped_parts = [re.escape(part) for part in pattern.split("*")]
-    return "^" + ".*".join(escaped_parts) + "$"
+    prefix = r"^(?:[^.]+\.)*" if include_subdomains else "^"
+    return prefix + ".*".join(escaped_parts) + "$"
 
 
 def _source_comments(source_records: Sequence[Mapping[str, object]], prefix: str) -> List[str]:
@@ -317,8 +353,10 @@ def render_adh(rules: RuleSet, source_records: Sequence[Mapping[str, object]]) -
     lines.extend(_source_comments(source_records, "!"))
     lines.append("")
     lines.append("! Domain and exact-domain rules")
-    for domain in sorted(effective["suffix"] | effective["exact"]):
+    for domain in sorted(effective["suffix"]):
         lines.append(f"||{domain}^")
+    for domain in sorted(effective["exact"]):
+        lines.append(f"|{domain}^")
     if effective["wildcard"]:
         lines.append("")
         lines.append("! Host wildcard rules")
@@ -336,7 +374,7 @@ def render_adh(rules: RuleSet, source_records: Sequence[Mapping[str, object]]) -
 
 def render_clash(rules: RuleSet, source_records: Sequence[Mapping[str, object]]) -> str:
     effective = rules.effective()
-    lines = ["# PCDN block list for Clash/Mihomo", "# behavior: domain"]
+    lines = ["# PCDN block list for Clash/Mihomo", "# behavior: classical", "# format: yaml"]
     lines.extend(_source_comments(source_records, "#"))
     lines.append("")
     lines.append("payload:")
@@ -345,7 +383,7 @@ def render_clash(rules: RuleSet, source_records: Sequence[Mapping[str, object]])
     for domain in sorted(effective["exact"]):
         lines.append(f"  - DOMAIN,{domain}")
     for pattern in sorted(effective["wildcard"]):
-        lines.append(f"  - DOMAIN-REGEX,{wildcard_to_regex(pattern)}")
+        lines.append(f"  - DOMAIN-REGEX,{wildcard_to_regex(pattern, include_subdomains=True)}")
     for pattern in sorted(effective["regex"]):
         lines.append(f"  - DOMAIN-REGEX,{pattern}")
     return "\n".join(lines) + "\n"
@@ -362,60 +400,121 @@ def render_lock(source_records: Sequence[Mapping[str, object]], rules: RuleSet) 
     return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
 
 
-def build_outputs(config_path: Path) -> Dict[Path, str]:
+def _previous_sources(root: Path, *, required: bool) -> Dict[str, Mapping[str, object]]:
+    path = root / "sources.lock.json"
+    if not path.exists() and not required:
+        return {}
+    try:
+        lock = json.loads(path.read_text(encoding="utf-8"))
+        records = lock["sources"]
+        if not isinstance(records, list) or any(not isinstance(item, dict) for item in records):
+            raise ValueError("invalid sources list")
+        result = {str(item["id"]): item for item in records}
+        if len(result) != len(records):
+            raise ValueError("duplicated source IDs")
+        return result
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise RuleParseError(f"cannot read source lock {path}: {exc}") from exc
+
+
+def build_outputs(config_path: Path, *, locked: bool = False) -> Dict[Path, str]:
+    root = config_path.resolve().parent
     sources = load_config(config_path)
+    previous = _previous_sources(root, required=locked)
+    if locked and set(previous) != {str(source["id"]) for source in sources}:
+        raise RuleParseError("locked sources do not match sources.json")
     combined = RuleSet()
     source_records: List[Mapping[str, object]] = []
+    snapshots: Dict[Path, str] = {}
 
     for source in sources:
         source_id = str(source["id"])
         url = str(source["url"])
-        text = fetch_source(url)
+        snapshot = root / "inputs" / f"{source_id}.txt"
+        prior = previous.get(source_id)
+        if locked:
+            assert prior is not None
+            if any(prior.get(key) != source.get(key) for key in ("url", "format")):
+                raise RuleParseError(f"{source_id}: locked source URL/format changed")
+            raw = snapshot.read_bytes()
+            if hashlib.sha256(raw).hexdigest() != prior.get("sha256"):
+                raise RuleParseError(f"{source_id}: locked input SHA-256 mismatch")
+            text = raw.decode("utf-8")
+        else:
+            text = fetch_source(url)
         digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-        parsed = parse_source(text, source_id)
+        parsed = parse_source(text, source_id, str(source["format"]))
+        count = parsed.rules.count()
+        if not locked and prior:
+            baseline = int(prior["unique_rules"])
+            if baseline > 0 and not 0.3 <= count / baseline <= 5.0:
+                raise RuleParseError(
+                    f"{source_id}: rule count changed from {baseline} to {count}; review required"
+                )
         combined.merge(parsed.rules)
+        snapshots[snapshot] = text
         source_records.append(
             {
                 "id": source_id,
                 "name": str(source.get("name", source_id)),
                 "url": url,
-                "format": str(source.get("format", "auto")),
+                "format": str(source["format"]),
                 "sha256": digest,
                 "recognized_lines": parsed.recognized_lines,
-                "unique_rules": parsed.rules.count(),
+                "unique_rules": count,
             }
         )
-        print(
-            f"{source_id}: {parsed.rules.count()} unique rules, "
-            f"sha256={digest}"
-        )
+        print(f"{source_id}: {count} unique rules, sha256={digest}")
 
     if combined.count() == 0:
         raise RuleParseError("all sources combined produced no rules")
     return {
-        OUTPUT_FILES["adh"]: render_adh(combined, source_records),
-        OUTPUT_FILES["clash"]: render_clash(combined, source_records),
-        OUTPUT_FILES["lock"]: render_lock(source_records, combined),
+        root / "pcdn_block_adh.txt": render_adh(combined, source_records),
+        root / "pcdn_block_clash.yaml": render_clash(combined, source_records),
+        root / "sources.lock.json": render_lock(source_records, combined),
+        **snapshots,
     }
 
 
 def write_outputs(outputs: Mapping[Path, str]) -> None:
-    for path, content in outputs.items():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f".{path.name}.tmp")
-        temporary.write_text(content, encoding="utf-8", newline="\n")
-        temporary.replace(path)
-        print(f"wrote {path.relative_to(ROOT)}")
+    """Stage the whole result and roll back on publication errors."""
+    original = {path: path.read_bytes() if path.exists() else None for path in outputs}
+    applied: List[Path] = []
+    with tempfile.TemporaryDirectory(prefix="pcdn-publish-") as temporary:
+        staged = {}
+        for index, (path, content) in enumerate(outputs.items()):
+            stage = Path(temporary) / str(index)
+            stage.write_text(content, encoding="utf-8", newline="\n")
+            staged[path] = stage
+        try:
+            for path, stage in staged.items():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                # Stage on the destination filesystem before atomic replacement.
+                local = path.with_name(f".{path.name}.tmp")
+                local.write_bytes(stage.read_bytes())
+                local.replace(path)
+                applied.append(path)
+        except OSError:
+            for path in reversed(applied):
+                data = original[path]
+                if data is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(data)
+            raise
+        finally:
+            for path in outputs:
+                path.with_name(f".{path.name}.tmp").unlink(missing_ok=True)
 
 
 def check_outputs(outputs: Mapping[Path, str]) -> bool:
     clean = True
     for path, expected in outputs.items():
-        actual = path.read_text(encoding="utf-8") if path.exists() else ""
+        actual = path.read_bytes().decode("utf-8") if path.exists() else ""
         if actual == expected:
             continue
         clean = False
-        print(f"{path.relative_to(ROOT)} is stale or missing", file=sys.stderr)
+        print(f"{path} is stale or missing", file=sys.stderr)
         diff = difflib.unified_diff(
             actual.splitlines(),
             expected.splitlines(),
@@ -435,16 +534,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="fetch and render in memory, then fail if committed outputs are stale",
+        help="render in memory and fail if committed outputs are stale (implies --locked)",
     )
+    parser.add_argument("--locked", action="store_true", help="replay committed SHA-256-verified inputs without network")
     args = parser.parse_args(argv)
     try:
-        outputs = build_outputs(args.config.resolve())
+        outputs = build_outputs(args.config.resolve(), locked=args.locked or args.check)
         if args.check:
             return 0 if check_outputs(outputs) else 1
         write_outputs(outputs)
         return 0
-    except (FetchError, OSError, RuleParseError) as exc:
+    except (FetchError, OSError, UnicodeError, RuleParseError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 

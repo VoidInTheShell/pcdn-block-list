@@ -24,7 +24,7 @@ Clash / Mihomo 配置示例：
 rule-providers:
   PCDN:
     type: http
-    behavior: domain
+    behavior: classical
     format: yaml
     url: "https://raw.githubusercontent.com/VoidInTheShell/pcdn-block-list/master/pcdn_block_clash.yaml"
     path: ./RuleSet/pcdn_block_clash.yaml
@@ -33,6 +33,8 @@ rule-providers:
 rules:
   - RULE-SET,PCDN,REJECT,no-resolve
 ```
+
+该文件含 `DOMAIN-SUFFIX`、`DOMAIN` 和 `DOMAIN-REGEX`，必须使用 `behavior: classical`，不能按 `domain` 加载或直接改名为 MRS。AdGuard 主机通配符转换为保留后缀锚定语义的正则；精确域名不会被扩大为后缀。带条件、取消或例外的 AdGuard 规则会阻断生成，避免被误转为无条件拦截。
 
 这份规则是主动拦截用的，可能影响依赖相同 CDN/P2P 基础设施的正常业务；建议先在自己的网络和设备上观察命中情况，再决定是否长期启用。
 
@@ -43,9 +45,10 @@ rules:
 - 每 6 小时抓取一次所有必需上游；
 - 支持在 GitHub Actions 页面手动运行；
 - 在 `sources.json`、脚本或规则相关文件变更后自动重新生成；
-- 运行标准库单元测试、严格语法解析和生成结果校验；
+- 运行标准库单元测试、严格语法解析及固定版本 Mihomo 的真实加载、条目数和正反例匹配校验；
 - 只有所有上游抓取并解析成功时才提交变更，抓取失败、空文件或未知语法会 fail closed，不会用残缺结果覆盖已有产物；
-- 将每个上游的 SHA-256、识别行数和规则数写入 [`sources.lock.json`](sources.lock.json)，即使规则集合没有变化，上游内容变化也可审计。
+- 将每个上游的 SHA-256、识别行数和规则数写入 [`sources.lock.json`](sources.lock.json)，原始输入同时保存到 `inputs/`；校验只回放这些输入，不会再次抓取变化中的上游；
+- 来源规则数异常增长超过 5 倍或缩小至 30% 以下时停止，等待人工审阅；全部生成成功后才发布，文件替换失败会回滚。
 
 Pull Request 只执行验证，不会向目标分支写入；定时任务和 `master` 分支上的相关变更会由 `github-actions[bot]` 提交 `chore: sync PCDN rules`。
 
@@ -54,8 +57,11 @@ Pull Request 只执行验证，不会向目标分支写入；定时任务和 `ma
 ```powershell
 python scripts/sync_rules.py
 python -m unittest discover -s tests -v
-python scripts/sync_rules.py --check
+python scripts/sync_rules.py --locked --check
+python scripts/validate_mihomo.py --binary /path/to/mihomo
 ```
+
+不带参数运行同步器会刷新所有上游并保存快照；`--locked` 仅用提交的快照重建。`--check` 隐含 `--locked`，既不联网也不写产物，适合 PR 和历史提交校验。快照缺失、损坏，或来源 URL/声明格式与锁不一致时会失败，不会偷偷回退到实时下载。Linux amd64 可用 `python scripts/validate_mihomo.py --install` 下载经 SHA-256 校验的固定内核；其他平台请提供本地内核路径。
 
 ## 当前上游
 
