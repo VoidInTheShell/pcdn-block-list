@@ -1,0 +1,104 @@
+! 拦截一些p2pcdn的相关规则
+! 主要是防止自己成为p2p cdn的节点为主
+
+! 腾讯
+||stun.qqlive.qq.com^
+||musicstun.p2p.qq.com^
+||p2p.qq.com^
+||p2ptun.qq.com^
+||*.p2ptun.qq.com^
+||p2pupdate.gamedl.qq.com^
+||p2pupgrade.gamedl.qq.com^
+# 上面两个的cname解析结果
+||stun-a1.qq.com^
+# 疑似腾讯云stun服务器
+||signal.qvb.qcloud.com^
+||stun*.qvb.qcloud.com^
+# 腾讯云
+# apd-vodp2plogin.teg.tencent-cloud.net（P2P 登录）、apd-vodp2pnat.teg.tencent-cloud.net（NAT）、apd-pcdnvodstat.teg.tencent-cloud.net（PCDN 统计上报）
+||apd-*.teg.tencent-cloud.net^
+
+!百度/小度
+||pcdn-query.baidu.com^
+||dcdn.baidu.com^
+||puncher.xiaodu.com^
+# stun相关域名
+# STUN/ICE（NAT 穿透）
+#    ice-stunserver.xdrtc.com / ice-stunserver-v6.xdrtc.com
+#    icestatis.xdrtc.com / iceudpstat.xdrtc.com / hbiceapi.xdrtc.com
+||xdrtc.com^ 
+
+! 快手
+/^(.+)-p2p-pull\.(video|live)-voip\.com$/
+/^(.+)-p2p\.pull\.yximgs\.com$/
+/^(.+)-p2p-(.+)\.pull\.yximgs\.com$/
+||*.pcdn.yximgs.com^
+||config-p2p-*.vcloud.ks-live.com^
+||slb-p2p.vcloud.ks-live.com^
+# 疑似p2p cdn文件
+||yximgs-webrtc.liveplay.myqcloud.com^
+# xxpkg系 疑似快手关联公司
+||*pcdn*.xxpkg.com^
+||p2p-punch.xxpkg.com^
+||p2p-punch-*.xxpkg.com^
+
+! 斗鱼
+||p2plog.douyucdn.cn^
+||p2perrorlog.douyucdn.cn^
+||p2pchunk-table.douyucdn.cn^
+||p2pchunk-ws.douyucdn.cn^
+||stun*.douyucdn.cn^
+/trk-([0-9\-]+)\.douyucdn\.cn/
+||bjfesdk.douyucdn.cn^
+||dotcounter.douyucdn.cn^
+||sdkapi.douyucdn.cn^
+||p2pchunk-*.douyucdn.cn^
+||p2pable-*.douyucdn.cn^
+||dyp2p-*.douyucdn2.cn^
+
+!虎牙
+||*.p2p.huya.com^
+
+! 芒果tv
+||stun.hitv.com^
+
+! 56网/搜狐视频
+||p2p.tracker.tv.sohu.com^
+
+! 星域云/网心
+||conf-darwin.xycdn.com^
+||seeds*-darwin.xycdn.com^
+||seeds-open.xycdn.com^
+||ttxyajs.data.kuiniuca.com^
+||sd-gl.xycdn.com^
+||starrydyn.com^
+||sd-glsky.xycdn.com^
+||comfylink.com^
+||kuiniuca.com^
+
+!bilibili
+||*-pcdn-*.biliapi.net^
+||stun*.chat.bilibili.com^
+||*-p2p-*.chat.bilibili.com^
+
+!金山云
+||*.stun.yfp2p.net^
+||pcth-cdn.ksyun.com^
+||td.ksyun.com^
+||slb-p2p.vcloud.ks-live.com^
+
+!七牛云
+||*.gslb.ubeethiesemo.com^
+||log.qiniuapi.com^
+
+!蓝山云
+! https://hub.docker.com/layers/shilazi/lsycloud-iaas/d2.2.10/images/sha256-92d6c6a185f243e6f8bc8421d7c3bc0db6a434c435241ce39ef029243c47cf7f?tab=layers
+! https://hub.docker.com/r/lsycloud/iaas-arm64
+||hnzkclouds.com^
+
+! 抖音
+# 支持屏蔽vod和live的PCDN，需要和百度+网心的一起拦截
+||ndcpp.com^
+
+!爱奇艺
+||tpa-hcdn.iqiyi.com^
